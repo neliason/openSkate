@@ -43,7 +43,6 @@ import ioioquickstart.android.simpledigitaloutput.R;
 
 public class MainActivity extends AbstractIOIOActivity implements DialogInterface.OnClickListener, View.OnClickListener {
 
-    //comment
     private final int LED1_PIN = 34;
     private final int PWM1_PIN = 13;
     private Button mLed1Button;
@@ -90,11 +89,10 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 
-
+    //RPi2 opens and transmits Bluetooth communications
     public void sendBtMsg(String msg2send) {
         if (attachRPi2) {
             UUID uuid = UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"); //Standard SerialPortService ID
-            Log.e("OpenSkate", "This still isn't working");
             try {
                 if (mmSocket == null) {
                     Log.e("OpenSkate", "null");
@@ -112,6 +110,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
     }
 
+    //call GPS speed
     public class calcVelocity implements LocationListener {
         @Override
         public void onLocationChanged(Location location) {
@@ -149,8 +148,9 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
     }
 
-    ;
 
+    //update unit speed (variable being transmitted)
+    //used for volume buttons, not used for finger sliding
     public void incrementSpeed() {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         unitSpeed = unitSpeed + unitSpeedIncrement;
@@ -161,6 +161,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
     }
 
+    //see above
     public void decrementSpeed() {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         unitSpeed = unitSpeed - unitSpeedIncrement;
@@ -171,6 +172,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
     }
 
+    //tie volume buttons to action
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -200,12 +202,15 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
     }
 
+    //ignore
     public static final String TAG = "NodTest";
     OpenSpatialService mOpenSpatialService;
 
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
 
+    //Android
+    //runs when app opened
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -256,6 +261,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
             }
         }
 
+        //change text to new speed if speed changed
         textThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -284,13 +290,14 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 
         //Keep screen on to make sure commands are always sent
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        bindService(new Intent(this, OpenSpatialService.class), mOpenSpatialServiceConnection, BIND_AUTO_CREATE);
+        bindService(new Intent(this, OpenSpatialService.class), mOpenSpatialServiceConnection, BIND_AUTO_CREATE); //nod
 
 //        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 //        gpsVelocity = new calcVelocity();
 //        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, gpsVelocity);
     }
 
+    //turns GPS on/off
     public void toggleGPS() {
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         gpsVelocity = new calcVelocity();
@@ -308,10 +315,11 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
     }
 
+
     public void initializeESC() throws InterruptedException {
         unitSpeed = 50;
        // wait(2000);
-        unitSpeed = 70;
+        unitSpeed = 70; //above 70 accelerates, 50-70 brakes, (45-95 usable)
     }
 
     @Override
@@ -349,6 +357,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         return true;
     }
 
+    //android, app quit
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -363,6 +372,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         unbindService(mOpenSpatialServiceConnection);
     }
 
+    //nod
     private ServiceConnection mOpenSpatialServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -454,16 +464,17 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 
     }
 
+
     class IOIOThread extends AbstractIOIOActivity.IOIOThread {
         private DigitalOutput mLed1;
         private PwmOutput mPwm1;
 
-
+        //runs on connection with IOIO
         @Override
         protected void setup() throws ConnectionLostException {
-            mLed1 = ioio_.openDigitalOutput(LED1_PIN, false);
+            mLed1 = ioio_.openDigitalOutput(LED1_PIN, false); //to turn lights on
 //            mPwm1 = ioio_.openPwmOutput(new DigitalOutput.Spec(PWM1_PIN, DigitalOutput.Spec.Mode.OPEN_DRAIN), 500);
-            mPwm1 = ioio_.openPwmOutput(PWM1_PIN, 500);
+            mPwm1 = ioio_.openPwmOutput(PWM1_PIN, 500); //initialize pwm pin, 500 frequency
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -475,6 +486,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
             // make sure to runOnUiThread
         }
 
+        //same as arduino loop
         @Override
         protected void loop() throws ConnectionLostException {
             mLed1.write(mLed1State);
@@ -497,7 +509,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
             }
         }
 
-
+        //runs on disconnected
         @Override
         protected void disconnected() {
             runOnUiThread(new Runnable() {
@@ -517,10 +529,11 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         return new IOIOThread();
     }
 
+    //handles buttons
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.btn1:
+            case R.id.btn1: //LED
                 if (mLed1State) {
                     mLed1State = false;
                     mLed1Button.setText("Power Off");
@@ -529,7 +542,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
                     mLed1Button.setText("Power On");
                 }
                 break;
-            case R.id.btn2:
+            case R.id.btn2: //GPS
                 if (gpsState) {
                     gpsState = false;
                     GPSstateCheck = true;
