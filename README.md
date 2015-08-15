@@ -1,2 +1,0 @@
-# openSkate
-Electric skateboard
