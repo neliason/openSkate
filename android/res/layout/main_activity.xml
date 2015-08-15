@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+    android:orientation="vertical">
+
+
+    <TextView
+        android:id="@+id/text1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:layout_weight="1"
+        tools:text="Throttle: 100%"
+        android:textSize="25dp"/>
+    <TextView
+        android:id="@+id/velocityText"
+        android:layout_marginTop="50dp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:text="GPS Speed:\n9.8 m/s"
+        android:textSize="25dp"
+        android:gravity="center_horizontal"
+        />
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_marginTop="50dp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:text="Board Status:\nDisconnect"
+        android:textSize="25dp"
+        android:gravity="center_horizontal"
+        />
+    <Button
+        android:id="@+id/btn2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/gps_off"
+        android:layout_marginTop="50dp"
+        />
+    <Button
+        android:id="@+id/btn1"
+        android:layout_marginTop="0dp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/led_off" />
+    <Button
+        android:id="@+id/start_up"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/init_start"/>
+
+
+
+
+</LinearLayout>

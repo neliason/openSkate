@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">OpenSkate</string>
+    <string name="led_off">Power Off</string>
+    <string name="led_on">Power On</string>
+    <string name="gps_off">GPS Off</string>
+    <string name="gps_on">GPS On</string>
+    <string name="init_start">Initialize ESC</string>
+</resources>
