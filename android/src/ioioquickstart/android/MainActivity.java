@@ -43,6 +43,7 @@ import ioioquickstart.android.simpledigitaloutput.R;
 
 public class MainActivity extends AbstractIOIOActivity implements DialogInterface.OnClickListener, View.OnClickListener {
 
+    //comment
     private final int LED1_PIN = 34;
     private final int PWM1_PIN = 13;
     private Button mLed1Button;
