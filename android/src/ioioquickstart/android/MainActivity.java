@@ -52,6 +52,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     private boolean mLed1State = false;
     private boolean gpsState = true;
     private boolean GPSstateCheck = true;
+    private boolean isForward = true;
 
     boolean attachIOIO = true; //SET TRUE IF OPENSKATE IS USING IOIO COM PROTOCOL;
     boolean attachRPi2 = false;  //SET TRUE IF OPENSKATE IS UGING RPI2 COM PROTOCOL;
@@ -270,7 +271,13 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Pwm1Text.setText("Throttle:\n" + (int) unitSpeed + "%");
+                                if (unitSpeed == 70) {
+                                    Pwm1Text.setText("Throttle:\n" + 0 + "%");
+                                } else if (isForward) {
+                                    Pwm1Text.setText("Throttle:\n" + (int) ((unitSpeed - 73) / 27 * 100) + "%");
+                                } else {
+                                    Pwm1Text.setText("Throttle:\n" + (int) ((unitSpeed - 67) / 10 * 100) + "%");
+                                }
                                 velocityText.setText("GPS Speed:\n" + boardVelocity + "m/s");
                             }
                         });
@@ -339,18 +346,22 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
             case MotionEvent.ACTION_MOVE:
                 yCurrentPosition = event.getY(); //current position of finger
                 dyPosition = yNeutralPosition - yCurrentPosition;
+                Log.d("yPosition", String.valueOf(yCurrentPosition));
                 Log.d("dY Position", String.valueOf(dyPosition));
                 if (yCurrentPosition <= yNeutralMax && yCurrentPosition >= yPositionMax) {
-                    unitSpeed = ((dyPosition - NeutralRange) / (dyPositionMax)) * maxSpeed;
+                    unitSpeed = ((dyPosition - NeutralRange) / (dyPositionMax * 100/27)) * maxSpeed + 73;
+                    isForward = true;
                 }
                 if (yCurrentPosition >= yNeutralMin && yCurrentPosition <= yPositionMin) {
-                    unitSpeed = ((dyPosition + NeutralRange) / (dyPositionMax)) * maxSpeed;
+                    unitSpeed = ((dyPosition + NeutralRange) / (dyPositionMax * 100/10)) * maxSpeed + 67 ;
+                    isForward = false;
                 }
+                Log.d("unitSpeed", String.valueOf(unitSpeed));
                 break;
             case MotionEvent.ACTION_UP:
                 //Reset the throttle to zero when touch is released
                 //Throttle "springing" back to zero
-                unitSpeed = 0;
+                unitSpeed = 70;
                 break;
         }
 
@@ -500,7 +511,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 //
 //            }
             mPwm1.setDutyCycle(Math.abs(unitSpeed / 100)); //Sets the boards duty cycle
-            Log.d("PWM", String.valueOf(Math.abs(unitSpeed / 100)));
+            //Log.d("PWM", String.valueOf(Math.abs(unitSpeed / 100)));
 
             try {
                 sleep(100);
