@@ -53,8 +53,8 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     private boolean gpsState = true;
     private boolean GPSstateCheck = true;
 
-    boolean attachIOIO = true; //SET TRUE IF OPENSKATE IS USING IOIO COM PROTOCOL;
-    boolean attachRPi2 = false;  //SET TRUE IF OPENSKATE IS UGING RPI2 COM PROTOCOL;
+    boolean attachIOIO = false; //SET TRUE IF OPENSKATE IS USING IOIO COM PROTOCOL;
+    boolean attachRPi2 = true;  //SET TRUE IF OPENSKATE IS UGING RPI2 COM PROTOCOL;
 
     String eventTypeString;
     float unitSpeed = 0; //NORMALIZED SPEED ON A SCALE OF -100% to 100%
@@ -93,7 +93,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     public void sendBtMsg(String msg2send) {
         if (attachRPi2) {
             UUID uuid = UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"); //Standard SerialPortService ID
-            Log.e("OpenSkate", "This still isn't working");
+           // Log.e("OpenSkate", "This still isn't working");
             try {
                 if (mmSocket == null) {
                     Log.e("OpenSkate", "null");
@@ -148,7 +148,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
     }
 
-    ;
+
 
     public void incrementSpeed() {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -308,9 +308,13 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     }
 
     public void initializeESC() throws InterruptedException {
-        unitSpeed = 50;
-       // wait(2000);
-        unitSpeed = 70;
+        if(attachIOIO) {
+            unitSpeed = 50;
+            // wait(2000);
+            unitSpeed = 70;
+        } else {
+            sendBtMsg("INITIALIZE");
+        }
     }
 
     @Override
@@ -467,7 +471,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
                 @Override
                 public void run() {
                     statusText.setText("Board Status:\n" +
-                            "Connected");
+                            "IOIO Connected");
 
                 }
             });
@@ -523,6 +527,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
                 if (mLed1State) {
                     mLed1State = false;
                     mLed1Button.setText("Power Off");
+                    //TODO add Rpi2 if statement
                 } else {
                     mLed1State = true;
                     mLed1Button.setText("Power On");
@@ -545,6 +550,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                //TODO add Rpi2 if statement
             default:
                 break;
         }
