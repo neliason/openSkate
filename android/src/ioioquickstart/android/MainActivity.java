@@ -34,6 +34,7 @@ import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
 
+import ioio.lib.api.AnalogInput;
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.PwmOutput;
 import ioio.lib.api.exception.ConnectionLostException;
@@ -45,6 +46,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 
     private final int LED1_PIN = 34;
     private final int PWM1_PIN = 13;
+    private final int BAT1_PWR = 14;
     private Button mLed1Button;
     private Button gpsStateButton;
     private Button initializeButton;
@@ -256,6 +258,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
 
         textThread = new Thread(new Runnable() {
+            //TODO Add text updates for battery % when supported by EE
             @Override
             public void run() {
                 while (!Thread.currentThread().isInterrupted()) {
@@ -464,9 +467,8 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 
         @Override
         protected void setup() throws ConnectionLostException {
-            mLed1 = ioio_.openDigitalOutput(LED1_PIN, false);
-//            mPwm1 = ioio_.openPwmOutput(new DigitalOutput.Spec(PWM1_PIN, DigitalOutput.Spec.Mode.OPEN_DRAIN), 500);
-            mPwm1 = ioio_.openPwmOutput(PWM1_PIN, 500);
+            mLed1 = ioio_.openDigitalOutput(LED1_PIN, false); //Declare pin as DO for headlights
+            mPwm1 = ioio_.openPwmOutput(PWM1_PIN, 500); //Declare pin as PWM for speed
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -479,18 +481,13 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         }
 
         @Override
-        protected void loop() throws ConnectionLostException {
+        protected void loop() throws ConnectionLostException, InterruptedException {
             mLed1.write(mLed1State);
-//            if (unitSpeed >= 0) {
-////                mPwm1.setPulseWidth(1700); //This puts the board in drive
-//                mPwm1 = ioio_.openPwmOutput(new DigitalOutput.Spec(PWM1_PIN, DigitalOutput.Spec.Mode.OPEN_DRAIN), 588);
-//
-//            } else {
-////                mPwm1.setPulseWidth(1000); //This puts the board in reverse
-//                mPwm1 = ioio_.openPwmOutput(new DigitalOutput.Spec(PWM1_PIN, DigitalOutput.Spec.Mode.OPEN_DRAIN), 1000);
-//
-//            }
             mPwm1.setDutyCycle(Math.abs(unitSpeed / 100)); //Sets the boards duty cycle
+
+            AnalogInput mBat1 = ioio_.openAnalogInput(BAT1_PWR);  //Declare pin as Analog in for Bat %
+            float BatteryPercent = mBat1.getVoltage();
+
             Log.d("PWM", String.valueOf(Math.abs(unitSpeed / 100)));
 
             try {
