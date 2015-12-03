@@ -24,10 +24,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
-import net.openspatial.ButtonEvent;
-import net.openspatial.OpenSpatialEvent;
-import net.openspatial.OpenSpatialException;
-import net.openspatial.OpenSpatialService;
+import net.openspatial.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,7 +38,9 @@ import ioio.lib.util.AbstractIOIOActivity;
 import ioioquickstart.android.simpledigitaloutput.R;
 
 
-public class MainActivity extends AbstractIOIOActivity implements DialogInterface.OnClickListener, View.OnClickListener {
+public class MainActivity extends AbstractIOIOActivity implements OpenSpatialInterface, DialogInterface.OnClickListener, View.OnClickListener {
+
+    BluetoothDevice mCurrentDevice = null;
 
     private final int LED1_PIN = 34;
     private final int PWM1_PIN = 13;
@@ -53,6 +52,7 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     private boolean gpsState = true;
     private boolean GPSstateCheck = true;
     private boolean isForward = true;
+    private boolean touchControl = true;
 
     boolean attachIOIO = true; //SET TRUE IF OPENSKATE IS USING IOIO COM PROTOCOL;
     boolean attachRPi2 = false;  //SET TRUE IF OPENSKATE IS UGING RPI2 COM PROTOCOL;
@@ -74,6 +74,12 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     float yPositionMin;
     float dyPosition;
     float dyPositionMax = 150;
+
+    float backSpinMax = 247;
+    float backSpinMin = 12;
+    float backSpinNeutral = 128;
+    float backSpinNeutralZone = 15;
+    float tempSpeed = 0;
 
     int[] buttonArray;
     BluetoothSocket mmSocket;
@@ -110,6 +116,45 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
             }
         }
     }
+
+
+    @Override
+    public void onDeviceDisconnected(BluetoothDevice bluetoothDevice) {
+        touchControl = true;
+
+    }
+
+    @Override
+    public void onGetParameterResponse(BluetoothDevice bluetoothDevice, DataType dataType, DeviceParameter deviceParameter, ResponseCode responseCode, short[] shorts) {
+
+    }
+
+    @Override
+    public void onSetParameterResponse(BluetoothDevice bluetoothDevice, DataType dataType, DeviceParameter deviceParameter, ResponseCode responseCode, short[] shorts) {
+
+    }
+
+    @Override
+    public void onGetIdentifierResponse(BluetoothDevice bluetoothDevice, DataType dataType, byte b, ResponseCode responseCode, String s) {
+
+    }
+
+    @Override
+    public void onGetParameterRangeResponse(BluetoothDevice bluetoothDevice, DataType dataType, DeviceParameter deviceParameter, ResponseCode responseCode, Number number, Number number1) {
+
+    }
+
+    @Override
+    public void onDataEnabledResponse(BluetoothDevice bluetoothDevice, DataType dataType, ResponseCode responseCode) {
+
+    }
+
+    @Override
+    public void onDataDisabledResponse(BluetoothDevice bluetoothDevice, DataType dataType, ResponseCode responseCode) {
+
+    }
+
+
 
     //call GPS speed
     public class calcVelocity implements LocationListener {
@@ -205,6 +250,8 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 
     //ignore
     public static final String TAG = "NodTest";
+
+
     OpenSpatialService mOpenSpatialService;
 
 
@@ -216,6 +263,9 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
+
+
+//        mOpenSpatialService.enableData(mCurrentDevice, DataType.ANALOG);
 
         mLed1Button = (Button) findViewById(R.id.btn1);
         mLed1Button.setOnClickListener(this);
@@ -297,11 +347,14 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
 
         //Keep screen on to make sure commands are always sent
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         bindService(new Intent(this, OpenSpatialService.class), mOpenSpatialServiceConnection, BIND_AUTO_CREATE); //nod
 
 //        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 //        gpsVelocity = new calcVelocity();
 //        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, gpsVelocity);
+
+
     }
 
     //turns GPS on/off
@@ -335,34 +388,36 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
     //Touch down determines the center of the neutral position
     //Sliding finger beyond the bounds of the neutral zone adjust the duty cycle of the throttle
     public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                yNeutralPosition = event.getY(); //Neutral Position: Point on screen that corresponds to 0% duty cycle
-                yNeutralMax = yNeutralPosition - NeutralRange; //Establishes upper limit of the neutral zone
-                yNeutralMin = yNeutralPosition + NeutralRange; //Establishes lower limit of the neutral zone
-                yPositionMax = yNeutralMax - dyPositionMax; //Establishes where 100% duty cycle is on the screen (this is relative to the yNeutralMax)
-                yPositionMin = yNeutralMin + dyPositionMax; //Establishes where -100% duty cycle is on the screen
-                break;
-            case MotionEvent.ACTION_MOVE:
-                yCurrentPosition = event.getY(); //current position of finger
-                dyPosition = yNeutralPosition - yCurrentPosition;
-                Log.d("yPosition", String.valueOf(yCurrentPosition));
-                Log.d("dY Position", String.valueOf(dyPosition));
-                if (yCurrentPosition <= yNeutralMax && yCurrentPosition >= yPositionMax) {
-                    unitSpeed = ((dyPosition - NeutralRange) / (dyPositionMax * 100/27)) * maxSpeed + 73;
-                    isForward = true;
-                }
-                if (yCurrentPosition >= yNeutralMin && yCurrentPosition <= yPositionMin) {
-                    unitSpeed = ((dyPosition + NeutralRange) / (dyPositionMax * 100/10)) * maxSpeed + 67 ;
-                    isForward = false;
-                }
-                Log.d("unitSpeed", String.valueOf(unitSpeed));
-                break;
-            case MotionEvent.ACTION_UP:
-                //Reset the throttle to zero when touch is released
-                //Throttle "springing" back to zero
-                unitSpeed = 70;
-                break;
+        if(touchControl) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    yNeutralPosition = event.getY(); //Neutral Position: Point on screen that corresponds to 0% duty cycle
+                    yNeutralMax = yNeutralPosition - NeutralRange; //Establishes upper limit of the neutral zone
+                    yNeutralMin = yNeutralPosition + NeutralRange; //Establishes lower limit of the neutral zone
+                    yPositionMax = yNeutralMax - dyPositionMax; //Establishes where 100% duty cycle is on the screen (this is relative to the yNeutralMax)
+                    yPositionMin = yNeutralMin + dyPositionMax; //Establishes where -100% duty cycle is on the screen
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    yCurrentPosition = event.getY(); //current position of finger
+                    dyPosition = yNeutralPosition - yCurrentPosition;
+                    Log.d("yPosition", String.valueOf(yCurrentPosition));
+                    Log.d("dY Position", String.valueOf(dyPosition));
+                    if (yCurrentPosition <= yNeutralMax && yCurrentPosition >= yPositionMax) {
+                        unitSpeed = Math.round(((dyPosition - NeutralRange) / (dyPositionMax * 100 / 27)) * maxSpeed + 73);
+                        isForward = true;
+                    }
+                    if (yCurrentPosition >= yNeutralMin && yCurrentPosition <= yPositionMin) {
+                        unitSpeed = Math.round(((dyPosition + NeutralRange) / (dyPositionMax * 100 / 10)) * maxSpeed + 67);
+                        isForward = false;
+                    }
+                    Log.d("unitSpeed", String.valueOf(unitSpeed));
+                    break;
+                case MotionEvent.ACTION_UP:
+                    //Reset the throttle to zero when touch is released
+                    //Throttle "springing" back to zero
+                    unitSpeed = 70;
+                    break;
+            }
         }
 
         return true;
@@ -388,87 +443,70 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mOpenSpatialService = ((OpenSpatialService.OpenSpatialServiceBinder) service).getService();
-            mOpenSpatialService.initialize(TAG, new OpenSpatialService.OpenSpatialServiceCallback() {
-                @Override
-                public void deviceConnected(final BluetoothDevice bluetoothDevice) {
-
-                    try {
-                        mOpenSpatialService.registerForButtonEvents(bluetoothDevice, new OpenSpatialEvent.EventListener() {
-                            @Override
-                            public void onEventReceived(OpenSpatialEvent openSpatialEvent) {
-                                buttonArray = new int[10];
-                                ButtonEvent event = (ButtonEvent) openSpatialEvent;
-//                                Log.d(TAG, event.buttonEventType.toString());
-                                eventTypeString = event.buttonEventType.toString();
-                                if (attachIOIO) {
-                                    if (eventTypeString.equals("TACTILE0_DOWN")) {
-                                        //IOIO METHOD CALLS GO HERE TO INCREMENT THE SPEED UPON A TACTILE0 BUTTON PRESS
-                                        incrementSpeed();
-                                    }
-                                    if (eventTypeString.equals("TACTILE1_DOWN")) {
-                                        //IOIO METHOD CALLS GO HERE TO DECREMENT THE SPEED UPON A TACTILE1 BUTTON PRESS
-                                        decrementSpeed();
-                                    }
-                                    if (eventTypeString.equals("TOUCH0_DOWN")) {
-//                                        setNewPWM(unitSpeed);
-                                    }
-                                    if (eventTypeString.equals("TOUCH0_UP")) {
-//                                        setNewPWM(minSpeed); //THIS IS A SAFETY TO MAKE SURE THERE IS NO UNINTENTIONAL ACCELERATION
-                                    }
-                                }
-                                if (attachRPi2) {
-                                    //METHOD CALL FOR SENDING BT MSG TO RPI
-                                    sendBtMsg(eventTypeString);
-                                }
-
-                            }
-                        });
-                    } catch (OpenSpatialException e) {
-                        Log.e(TAG, "Could not register for Button Press event" + e);
-                    }
-                }
-
-
-                @Override
-                public void deviceDisconnected(BluetoothDevice bluetoothDevice) {
-
-                }
-
-                @Override
-                public void buttonEventRegistrationResult(BluetoothDevice bluetoothDevice, int i) {
-
-                }
-
-                @Override
-                public void pointerEventRegistrationResult(BluetoothDevice bluetoothDevice, int i) {
-
-                }
-
-                @Override
-                public void pose6DEventRegistrationResult(BluetoothDevice bluetoothDevice, int i) {
-
-                }
-
-                @Override
-                public void gestureEventRegistrationResult(BluetoothDevice bluetoothDevice, int i) {
-
-                }
-
-                @Override
-                public void motion6DEventRegistrationResult(BluetoothDevice bluetoothDevice, int i) {
-
-                }
-            });
-
+            mOpenSpatialService.initialize(TAG, MainActivity.this);
             mOpenSpatialService.getConnectedDevices();
+            Log.d("nod", "shit should connect");
+
         }
-
-
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mOpenSpatialService = null;
         }
     };
+
+    @TargetApi(Build.VERSION_CODES.ECLAIR)
+    @Override
+    public void onDeviceConnected(BluetoothDevice device) {
+//        Log.d("device", device.getName() + " connected");
+        mCurrentDevice = device;
+
+        Log.d("nod", mCurrentDevice.toString());
+
+        if (mCurrentDevice != null && mOpenSpatialService != null) {
+            mOpenSpatialService.enableData(mCurrentDevice, DataType.ANALOG);
+            touchControl = false;  //turn off touch screen throttle
+            Log.d("nod", "OpenSpatial Started");
+        }
+
+    }
+
+    @Override
+    public void onDataReceived(OpenSpatialData openSpatialData) {
+//        Log.d("nod",openSpatialData.toString());
+        AnalogData analogData = (AnalogData) openSpatialData;
+        float XbSpinThrottle = (float) analogData.getAnalogValue(0);
+        float bSpinThrottle = (float) analogData.getAnalogValue(1);
+        float bSpinSafety = (float) analogData.getAnalogValue(2);
+
+        //TODO add code here for calculating analog stick angle relative to -Y axis
+
+        if(bSpinSafety <= 100) {
+            if (bSpinThrottle > (backSpinNeutral + backSpinNeutralZone)) {
+                tempSpeed = ((bSpinThrottle - (backSpinNeutral + backSpinNeutralZone)) / (backSpinMax - (backSpinNeutral + backSpinNeutralZone)));
+                if (tempSpeed > 1) {
+                    tempSpeed = 1;
+                }
+                tempSpeed = tempSpeed * (30) + 70;
+            } else if (bSpinThrottle < (backSpinNeutral - backSpinNeutralZone)) {
+                tempSpeed = (((backSpinNeutral - backSpinNeutralZone) - bSpinThrottle) / ((backSpinNeutral - backSpinNeutralZone) - backSpinMin));
+                if (tempSpeed < -1) {
+                    tempSpeed = -1;
+                }
+                tempSpeed = 70 - tempSpeed * (20);
+            } else {
+                tempSpeed = 70;
+            }
+            unitSpeed = tempSpeed;
+        } else {
+            unitSpeed = 70;
+        }
+
+
+        Log.d("nod", String.valueOf(unitSpeed));
+
+//        Log.d("nod", String.valueOf(analogData.getAnalogValue(1)));
+
+    }
 
     @Override
     public void onClick(DialogInterface dialogInterface, int i) {
@@ -484,7 +522,6 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         @Override
         protected void setup() throws ConnectionLostException {
             mLed1 = ioio_.openDigitalOutput(LED1_PIN, false); //to turn lights on
-//            mPwm1 = ioio_.openPwmOutput(new DigitalOutput.Spec(PWM1_PIN, DigitalOutput.Spec.Mode.OPEN_DRAIN), 500);
             mPwm1 = ioio_.openPwmOutput(PWM1_PIN, 500); //initialize pwm pin, 500 frequency
             runOnUiThread(new Runnable() {
                 @Override
@@ -501,15 +538,6 @@ public class MainActivity extends AbstractIOIOActivity implements DialogInterfac
         @Override
         protected void loop() throws ConnectionLostException {
             mLed1.write(mLed1State);
-//            if (unitSpeed >= 0) {
-////                mPwm1.setPulseWidth(1700); //This puts the board in drive
-//                mPwm1 = ioio_.openPwmOutput(new DigitalOutput.Spec(PWM1_PIN, DigitalOutput.Spec.Mode.OPEN_DRAIN), 588);
-//
-//            } else {
-////                mPwm1.setPulseWidth(1000); //This puts the board in reverse
-//                mPwm1 = ioio_.openPwmOutput(new DigitalOutput.Spec(PWM1_PIN, DigitalOutput.Spec.Mode.OPEN_DRAIN), 1000);
-//
-//            }
             mPwm1.setDutyCycle(Math.abs(unitSpeed / 100)); //Sets the boards duty cycle
             //Log.d("PWM", String.valueOf(Math.abs(unitSpeed / 100)));
 
