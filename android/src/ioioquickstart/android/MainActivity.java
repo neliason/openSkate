@@ -362,10 +362,8 @@ public class MainActivity extends AbstractIOIOActivity implements OpenSpatialInt
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         gpsVelocity = new calcVelocity();
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, gpsVelocity);
-        Log.d("GPS", "gps tag1");
         if (!gpsState && GPSstateCheck) {
             locationManager.removeUpdates(gpsVelocity);
-            Log.d("GPS", "gps tag2");
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -400,8 +398,8 @@ public class MainActivity extends AbstractIOIOActivity implements OpenSpatialInt
                 case MotionEvent.ACTION_MOVE:
                     yCurrentPosition = event.getY(); //current position of finger
                     dyPosition = yNeutralPosition - yCurrentPosition;
-                    Log.d("yPosition", String.valueOf(yCurrentPosition));
-                    Log.d("dY Position", String.valueOf(dyPosition));
+//                    Log.d("yPosition", String.valueOf(yCurrentPosition));
+//                    Log.d("dY Position", String.valueOf(dyPosition));
                     if (yCurrentPosition <= yNeutralMax && yCurrentPosition >= yPositionMax) {
                         unitSpeed = Math.round(((dyPosition - NeutralRange) / (dyPositionMax * 100 / 27)) * maxSpeed + 73);
                         isForward = true;
@@ -410,7 +408,7 @@ public class MainActivity extends AbstractIOIOActivity implements OpenSpatialInt
                         unitSpeed = Math.round(((dyPosition + NeutralRange) / (dyPositionMax * 100 / 10)) * maxSpeed + 67);
                         isForward = false;
                     }
-                    Log.d("unitSpeed", String.valueOf(unitSpeed));
+//                    Log.d("unitSpeed", String.valueOf(unitSpeed));
                     break;
                 case MotionEvent.ACTION_UP:
                     //Reset the throttle to zero when touch is released
@@ -445,7 +443,7 @@ public class MainActivity extends AbstractIOIOActivity implements OpenSpatialInt
             mOpenSpatialService = ((OpenSpatialService.OpenSpatialServiceBinder) service).getService();
             mOpenSpatialService.initialize(TAG, MainActivity.this);
             mOpenSpatialService.getConnectedDevices();
-            Log.d("nod", "shit should connect");
+//            Log.d("nod", "shit should connect");
 
         }
         @Override
@@ -460,12 +458,12 @@ public class MainActivity extends AbstractIOIOActivity implements OpenSpatialInt
 //        Log.d("device", device.getName() + " connected");
         mCurrentDevice = device;
 
-        Log.d("nod", mCurrentDevice.toString());
+//        Log.d("nod", mCurrentDevice.toString());
 
         if (mCurrentDevice != null && mOpenSpatialService != null) {
             mOpenSpatialService.enableData(mCurrentDevice, DataType.ANALOG);
             touchControl = false;  //turn off touch screen throttle
-            Log.d("nod", "OpenSpatial Started");
+//            Log.d("nod", "OpenSpatial Started");
         }
 
     }
@@ -502,7 +500,7 @@ public class MainActivity extends AbstractIOIOActivity implements OpenSpatialInt
         }
 
 
-        Log.d("nod", String.valueOf(unitSpeed));
+//        Log.d("nod", String.valueOf(unitSpeed));
 
 //        Log.d("nod", String.valueOf(analogData.getAnalogValue(1)));
 
